@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { Dropbox } = require('dropbox');
 
 const app = express();
@@ -109,6 +109,7 @@ async function generatePDF(html) {
   let browser;
   try {
     browser = await puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
       headless: 'new',
       args: [
         '--no-sandbox',
