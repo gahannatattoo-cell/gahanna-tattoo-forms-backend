@@ -16,6 +16,26 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 // Initialize Dropbox
 const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
 
+// Serve static HTML forms
+app.use('/public', express.static('public'));
+
+// Clean form URLs
+app.get('/forms/tattoo-adult', (req, res) => {
+  res.sendFile(__dirname + '/public/Tattoo_Release_Adult.html');
+});
+
+app.get('/forms/tattoo-minor', (req, res) => {
+  res.sendFile(__dirname + '/public/Tattoo_Release_Minor.html');
+});
+
+app.get('/forms/piercing-adult', (req, res) => {
+  res.sendFile(__dirname + '/public/Piercing_Release_Adult.html');
+});
+
+app.get('/forms/piercing-minor', (req, res) => {
+  res.sendFile(__dirname + '/public/Piercing_Release_Minor.html');
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Gahanna Tattoo Forms Backend' });
