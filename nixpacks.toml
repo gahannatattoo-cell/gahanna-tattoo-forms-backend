@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ['nodejs-18_x', 'chromium']
+nixPkgs = ["nodejs", "chromium"]
 
 [phases.install]
-cmds = ['npm ci --omit=dev']
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = []
 
 [start]
-cmd = 'PUPPETEER_EXECUTABLE_PATH=$(which chromium) node server.js'
+cmd = "node server.js"
