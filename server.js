@@ -42,6 +42,25 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Gahanna Tattoo Forms Backend' });
 });
 
+// Debug endpoint - check filesystem
+const fs = require('fs');
+app.get('/api/debug/files', (req, res) => {
+  try {
+    const publicDir = path.join(__dirname, 'public');
+    const filesExist = fs.existsSync(publicDir);
+    const files = filesExist ? fs.readdirSync(publicDir) : [];
+    
+    res.json({
+      __dirname: __dirname,
+      publicDir: publicDir,
+      publicExists: filesExist,
+      files: files
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 // Save form to "In Progress" folder (Client Complete)
 app.post('/api/forms/client-complete', async (req, res) => {
   try {
