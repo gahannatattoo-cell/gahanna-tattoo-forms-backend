@@ -4,6 +4,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const puppeteer = require('puppeteer-core');
 const { Dropbox } = require('dropbox');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +19,6 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
 
 // Serve static HTML forms
-const path = require('path');
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Clean form URLs
@@ -43,7 +44,6 @@ app.get('/health', (req, res) => {
 });
 
 // Debug endpoint - check filesystem
-const fs = require('fs');
 app.get('/api/debug/files', (req, res) => {
   try {
     const publicDir = path.join(__dirname, 'public');
