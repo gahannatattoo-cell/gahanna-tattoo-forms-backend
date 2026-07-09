@@ -350,3 +350,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Gahanna Tattoo Forms Backend running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
 });
+
