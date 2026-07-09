@@ -5,7 +5,7 @@ nixPkgs = ["nodejs"]
 cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["ls -la public/"]
+cmds = ["echo '=== Files in public during build ===' && ls -la public/ && echo '=== End of file list ==='"]
 
 [start]
 cmd = "node server.js"
