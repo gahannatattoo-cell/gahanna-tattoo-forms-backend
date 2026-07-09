@@ -8,4 +8,4 @@ cmds = ["npm ci"]
 cmds = []
 
 [start]
-cmd = "node server.js"
+cmd = "PUPPETEER_EXECUTABLE_PATH=$(which chromium) node server.js"
