@@ -857,6 +857,31 @@
         // Backend URL
         const BACKEND_URL = 'https://web-production-484f2.up.railway.app';
 
+        // Collect all form field data
+        function collectFormData() {
+            const formData = {
+                formType: 'tattoo-adult'
+            };
+            
+            // Get all input, select, and textarea elements
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(element => {
+                if (element.id) {
+                    if (element.type === 'checkbox') {
+                        formData[element.id] = element.checked;
+                    } else if (element.type === 'radio') {
+                        if (element.checked) {
+                            formData[element.name] = element.value;
+                        }
+                    } else {
+                        formData[element.id] = element.value;
+                    }
+                }
+            });
+            
+            return formData;
+        }
+
         // Client Complete Button
         document.getElementById('clientCompleteBtn').addEventListener('click', async function() {
             const date = document.getElementById('date').value;
@@ -870,6 +895,9 @@
             // Get complete form HTML
             const formHtml = document.documentElement.outerHTML;
             
+            // Collect form data
+            const formData = collectFormData();
+            
             // Show loading state
             const statusMsg = document.getElementById('statusMessage');
             statusMsg.textContent = '⏳ Saving to Dropbox...';
@@ -882,7 +910,7 @@
                 const response = await fetch(`${BACKEND_URL}/api/forms/client-complete`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ formHtml, filename })
+                    body: JSON.stringify({ formHtml, filename, formData })
                 });
                 
                 const result = await response.json();
@@ -915,13 +943,23 @@
 
         // Artist Complete Button
         document.getElementById('artistCompleteBtn').addEventListener('click', async function() {
-            const date = document.getElementById('date').value;
-            const lastName = document.getElementById('lastName').value;
-            const firstName = document.getElementById('firstName').value;
-            const artist = document.getElementById('artist').value;
-            const uniqueID = localStorage.getItem('currentFormID') || generateUniqueID();
+            // Check if this is a resumed form
+            const isResumedForm = localStorage.getItem('isResumedForm') === 'true';
+            const resumedFilename = localStorage.getItem('resumedFormFilename');
             
-            const filename = `${date}_${lastName}_${firstName}_${artist}_TattooAdult_${uniqueID}.pdf`;
+            let filename;
+            if (isResumedForm && resumedFilename) {
+                // Use the original filename for resumed forms
+                filename = resumedFilename.replace('.json', '.pdf');
+            } else {
+                // Generate filename for new forms
+                const date = document.getElementById('date').value;
+                const lastName = document.getElementById('lastName').value;
+                const firstName = document.getElementById('firstName').value;
+                const artist = document.getElementById('artist').value;
+                const uniqueID = localStorage.getItem('currentFormID') || generateUniqueID();
+                filename = `${date}_${lastName}_${firstName}_${artist}_TattooAdult_${uniqueID}.pdf`;
+            }
             
             // Get complete form HTML
             const formHtml = document.documentElement.outerHTML;
@@ -950,13 +988,22 @@
                     // Clean up localStorage
                     localStorage.removeItem('currentFormID');
                     localStorage.removeItem('currentFilename');
+                    localStorage.removeItem('isResumedForm');
+                    localStorage.removeItem('resumedFormFilename');
                     
-                    // Reset form after delay
-                    setTimeout(() => {
-                        if (confirm('Form complete! Reset for next client?')) {
-                            location.reload();
-                        }
-                    }, 2000);
+                    // If resumed form, redirect to dashboard
+                    if (isResumedForm) {
+                        setTimeout(() => {
+                            window.location.href = '/artist-dashboard';
+                        }, 2000);
+                    } else {
+                        // Reset form after delay
+                        setTimeout(() => {
+                            if (confirm('Form complete! Reset for next client?')) {
+                                location.reload();
+                            }
+                        }, 2000);
+                    }
                 } else {
                     throw new Error(result.error || 'Upload failed');
                 }

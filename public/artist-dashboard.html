@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Dashboard - Gahanna Tattoo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .forms-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .forms-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .forms-header h2 {
+            font-size: 24px;
+            color: #333;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .forms-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .form-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .form-card:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .form-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .client-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-type-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-tattoo {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .badge-piercing {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .badge-minor {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .form-card-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .detail-item strong {
+            color: #333;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .forms-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .refresh-btn {
+                width: 100%;
+            }
+            
+            .form-card-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Artist Dashboard</h1>
+            <p>Incomplete Forms Waiting for Completion</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalForms">0</div>
+                <div class="label">Incomplete Forms</div>
+            </div>
+        </div>
+        
+        <div class="forms-section">
+            <div class="forms-header">
+                <h2>Forms to Complete</h2>
+                <button class="refresh-btn" onclick="loadForms()">🔄 Refresh</button>
+            </div>
+            
+            <div id="formsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading forms...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadForms() {
+            const container = document.getElementById('formsContainer');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading forms...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/incomplete-forms');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const forms = data.forms;
+                    document.getElementById('totalForms').textContent = forms.length;
+                    
+                    if (forms.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">✨</div>
+                                <h3>All Caught Up!</h3>
+                                <p>No incomplete forms at the moment.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = '<div class="forms-list"></div>';
+                    const list = container.querySelector('.forms-list');
+                    
+                    forms.forEach(form => {
+                        const formCard = createFormCard(form);
+                        list.appendChild(formCard);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading forms:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Error Loading Forms</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function createFormCard(form) {
+            const card = document.createElement('div');
+            card.className = 'form-card';
+            card.onclick = () => resumeForm(form.filename);
+            
+            const isMinor = form.formType.toLowerCase().includes('minor');
+            const isTattoo = form.formType.toLowerCase().includes('tattoo');
+            const isPiercing = form.formType.toLowerCase().includes('piercing');
+            
+            let badgeClass = 'form-type-badge ';
+            if (isTattoo) badgeClass += 'badge-tattoo';
+            else if (isPiercing) badgeClass += 'badge-piercing';
+            if (isMinor) badgeClass += ' badge-minor';
+            
+            const date = new Date(form.modified);
+            const formattedDate = date.toLocaleDateString();
+            const formattedTime = date.toLocaleTimeString();
+            
+            card.innerHTML = `
+                <div class="form-card-header">
+                    <div class="client-name">${form.firstName} ${form.lastName}</div>
+                    <div class="${badgeClass}">${form.formType}</div>
+                </div>
+                <div class="form-card-details">
+                    <div class="detail-item">
+                        <strong>📅 Date:</strong> ${form.date}
+                    </div>
+                    <div class="detail-item">
+                        <strong>🎨 Artist:</strong> ${form.artist}
+                    </div>
+                    <div class="detail-item">
+                        <strong>🕐 Saved:</strong> ${formattedDate} ${formattedTime}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function resumeForm(filename) {
+            window.location.href = `/resume-form/${filename}`;
+        }
+        
+        // Load forms on page load
+        loadForms();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadForms, 30000);
+    </script>
+</body>
+</html>

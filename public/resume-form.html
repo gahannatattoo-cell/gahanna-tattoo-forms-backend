@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Form - Gahanna Tattoo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .loading-container {
+            max-width: 600px;
+            margin: 100px auto;
+            text-align: center;
+            background: white;
+            padding: 60px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .error-container {
+            max-width: 600px;
+            margin: 100px auto;
+            text-align: center;
+            background: white;
+            padding: 60px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        #formFrame {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingContainer" class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading form...</div>
+    </div>
+    
+    <iframe id="formFrame"></iframe>
+    
+    <script>
+        const filename = window.location.pathname.split('/').pop();
+        
+        async function loadFormData() {
+            try {
+                // Get form data from server
+                const response = await fetch(`/api/form-data/${filename}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load form data');
+                }
+                
+                const formData = data.formData;
+                
+                // Determine which form template to load
+                const formType = formData.formType;
+                let templateUrl = '';
+                
+                if (formType.includes('tattoo') && formType.includes('adult')) {
+                    templateUrl = '/forms/tattoo-adult';
+                } else if (formType.includes('tattoo') && formType.includes('minor')) {
+                    templateUrl = '/forms/tattoo-minor';
+                } else if (formType.includes('piercing') && formType.includes('adult')) {
+                    templateUrl = '/forms/piercing-adult';
+                } else if (formType.includes('piercing') && formType.includes('minor')) {
+                    templateUrl = '/forms/piercing-minor';
+                } else {
+                    throw new Error('Unknown form type: ' + formType);
+                }
+                
+                // Load the form in iframe and pre-fill data
+                const iframe = document.getElementById('formFrame');
+                iframe.src = templateUrl;
+                
+                iframe.onload = () => {
+                    try {
+                        // Pre-fill form data
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        
+                        // Fill all form fields
+                        Object.keys(formData).forEach(key => {
+                            const element = iframeDoc.getElementById(key);
+                            if (element) {
+                                if (element.type === 'checkbox') {
+                                    element.checked = formData[key];
+                                } else if (element.tagName === 'SELECT') {
+                                    element.value = formData[key];
+                                } else {
+                                    element.value = formData[key];
+                                }
+                            }
+                        });
+                        
+                        // Mark client section as complete
+                        const clientCompleteBtn = iframeDoc.querySelector('[onclick*="clientComplete"]');
+                        if (clientCompleteBtn) {
+                            clientCompleteBtn.style.display = 'none';
+                        }
+                        
+                        // Store the original filename for completion
+                        iframe.contentWindow.localStorage.setItem('resumedFormFilename', filename);
+                        iframe.contentWindow.localStorage.setItem('isResumedForm', 'true');
+                        
+                        // Show the iframe
+                        document.getElementById('loadingContainer').style.display = 'none';
+                        iframe.style.display = 'block';
+                        
+                    } catch (error) {
+                        console.error('Error pre-filling form:', error);
+                        showError('Error pre-filling form data', error.message);
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Error loading form:', error);
+                showError('Failed to load form', error.message);
+            }
+        }
+        
+        function showError(title, message) {
+            document.getElementById('loadingContainer').innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <h2 class="error-title">${title}</h2>
+                    <p class="error-message">${message}</p>
+                    <a href="/artist-dashboard" class="back-btn">← Back to Dashboard</a>
+                </div>
+            `;
+        }
+        
+        // Load form data on page load
+        loadFormData();
+    </script>
+</body>
+</html>

@@ -64,7 +64,7 @@ app.get('/api/debug/files', (req, res) => {
 // Save form to "In Progress" folder (Client Complete)
 app.post('/api/forms/client-complete', async (req, res) => {
   try {
-    const { formHtml, filename } = req.body;
+    const { formHtml, filename, formData } = req.body;
 
     if (!formHtml || !filename) {
       return res.status(400).json({ error: 'Missing formHtml or filename' });
@@ -73,20 +73,32 @@ app.post('/api/forms/client-complete', async (req, res) => {
     // Generate PDF from HTML
     const pdfBuffer = await generatePDF(formHtml);
 
-    // Upload to Dropbox "In Progress" folder
-    const path = `/Intake Forms/In Progress/${filename}`;
+    // Upload PDF to Dropbox "In Progress" folder
+    const pdfPath = `/Intake Forms/In Progress/${filename}`;
     await dbx.filesUpload({
-      path: path,
+      path: pdfPath,
       contents: pdfBuffer,
       mode: 'overwrite',
       autorename: false
     });
 
+    // Save form data as JSON to Data folder
+    if (formData) {
+      const jsonFilename = filename.replace('.pdf', '.json');
+      const jsonPath = `/Intake Forms/Data/${jsonFilename}`;
+      await dbx.filesUpload({
+        path: jsonPath,
+        contents: JSON.stringify(formData, null, 2),
+        mode: 'overwrite',
+        autorename: false
+      });
+    }
+
     res.json({
       success: true,
       message: 'Form saved to In Progress folder',
       filename: filename,
-      path: path
+      path: pdfPath
     });
 
   } catch (error) {
@@ -126,6 +138,16 @@ app.post('/api/forms/artist-complete', async (req, res) => {
     } catch (deleteError) {
       // File might not exist in In Progress - that's okay
       console.log('No file to delete from In Progress (likely direct completion)');
+    }
+
+    // Try to delete the JSON data file
+    try {
+      const jsonFilename = filename.replace('.pdf', '.json');
+      const dataPath = `/Intake Forms/Data/${jsonFilename}`;
+      await dbx.filesDeleteV2({ path: dataPath });
+    } catch (deleteError) {
+      // File might not exist - that's okay
+      console.log('No data file to delete');
     }
 
     res.json({
@@ -205,7 +227,8 @@ app.post('/api/setup-folders', async (req, res) => {
     const folders = [
       '/Intake Forms',
       '/Intake Forms/In Progress',
-      '/Intake Forms/Completed'
+      '/Intake Forms/Completed',
+      '/Intake Forms/Data'
     ];
 
     const results = [];
@@ -236,6 +259,90 @@ app.post('/api/setup-folders', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Get list of incomplete forms
+app.get('/api/incomplete-forms', async (req, res) => {
+  try {
+    const response = await dbx.filesListFolder({
+      path: '/Intake Forms/Data'
+    });
+
+    const forms = response.result.entries
+      .filter(entry => entry['.tag'] === 'file' && entry.name.endsWith('.json'))
+      .map(entry => {
+        // Parse filename: YYYY-MM-DD_LastName_FirstName_Artist_FormType_ID.json
+        const parts = entry.name.replace('.json', '').split('_');
+        return {
+          id: entry.id,
+          filename: entry.name,
+          date: parts[0] || '',
+          lastName: parts[1] || '',
+          firstName: parts[2] || '',
+          artist: parts[3] || '',
+          formType: parts[4] || '',
+          uniqueId: parts[5] || '',
+          modified: entry.client_modified
+        };
+      })
+      .sort((a, b) => new Date(b.modified) - new Date(a.modified));
+
+    res.json({
+      success: true,
+      forms: forms
+    });
+
+  } catch (error) {
+    console.error('Error listing incomplete forms:', error);
+    
+    // If folder doesn't exist, return empty list
+    if (error.status === 409 || error.status === 400) {
+      return res.json({
+        success: true,
+        forms: []
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Failed to list forms',
+      details: error.message
+    });
+  }
+});
+
+// Get specific form data
+app.get('/api/form-data/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const path = `/Intake Forms/Data/${filename}`;
+
+    const response = await dbx.filesDownload({ path: path });
+    const fileData = response.result.fileBinary.toString('utf-8');
+    const formData = JSON.parse(fileData);
+
+    res.json({
+      success: true,
+      formData: formData,
+      filename: filename
+    });
+
+  } catch (error) {
+    console.error('Error getting form data:', error);
+    res.status(500).json({
+      error: 'Failed to get form data',
+      details: error.message
+    });
+  }
+});
+
+// Artist dashboard
+app.get('/artist-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'artist-dashboard.html'));
+});
+
+// Resume form
+app.get('/resume-form/:filename', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'resume-form.html'));
 });
 
 // Start server
