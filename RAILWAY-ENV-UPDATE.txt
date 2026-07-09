@@ -1,0 +1,8 @@
+ADD THIS ENVIRONMENT VARIABLE IN RAILWAY:
+
+Variable Name: PUPPETEER_EXECUTABLE_PATH
+Variable Value: chromium
+
+(Railway's Nixpacks puts chromium in the PATH, so just use "chromium" instead of "/usr/bin/chromium")
+
+After adding this variable, Railway will auto-redeploy and the forms will work.
