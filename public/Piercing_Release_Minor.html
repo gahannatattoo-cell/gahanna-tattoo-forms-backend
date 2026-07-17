@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Piercing Release - Minor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -791,9 +792,6 @@
             return String(counter).padStart(6, '0');
         }
 
-        // Backend URL
-        const BACKEND_URL = 'https://web-production-484f2.up.railway.app';
-
         // Collect all form field data
         function collectFormData() {
             const formData = {
@@ -827,113 +825,106 @@
             const uniqueID = generateUniqueID();
             
             const filename = `${date}_${lastName}_${firstName}_${artist}_PiercingMinor_${uniqueID}.pdf`;
-            const formHtml = document.documentElement.outerHTML;
-            const formData = collectFormData();
             
+            // Show loading state
             const statusMsg = document.getElementById('statusMessage');
-            statusMsg.textContent = '⏳ Saving to Dropbox...';
+            statusMsg.textContent = '⏳ Generating PDF...';
             statusMsg.className = 'status-message';
             statusMsg.style.display = 'block';
             statusMsg.style.background = '#fff3cd';
             statusMsg.style.color = '#856404';
             
             try {
-                const response = await fetch(`${BACKEND_URL}/api/forms/client-complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ formHtml, filename, formData })
-                });
+                // Hide buttons before PDF generation
+                document.querySelector('.button-row').style.display = 'none';
                 
-                const result = await response.json();
+                // Generate PDF from form
+                const element = document.querySelector('.form-container');
+                const opt = {
+                    margin: 10,
+                    filename: filename,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
                 
-                if (result.success) {
-                    statusMsg.textContent = '✅ Saved to In Progress folder! Hand iPad to staff.';
-                    statusMsg.className = 'status-message success';
-                    localStorage.setItem('currentFormID', uniqueID);
-                    localStorage.setItem('currentFilename', filename);
-                } else {
-                    throw new Error(result.error || 'Upload failed');
-                }
+                await html2pdf().set(opt).from(element).save();
+                
+                // Show buttons again
+                document.querySelector('.button-row').style.display = 'grid';
+                
+                statusMsg.textContent = '✅ PDF downloaded! Hand iPad to staff.';
+                statusMsg.className = 'status-message success';
+                
+                // Store info for artist completion
+                localStorage.setItem('currentFormID', uniqueID);
+                localStorage.setItem('currentFilename', filename);
+                
             } catch (error) {
-                console.error('Upload error:', error);
-                statusMsg.textContent = '❌ Upload failed. Please try again or save manually.';
+                console.error('PDF generation error:', error);
+                document.querySelector('.button-row').style.display = 'grid';
+                statusMsg.textContent = '❌ PDF generation failed. Please try again.';
                 statusMsg.style.background = '#f8d7da';
                 statusMsg.style.color = '#721c24';
-                setTimeout(() => {
-                    if (confirm('Upload failed. Open print dialog to save manually?')) {
-                        window.print();
-                    }
-                }, 2000);
             }
         });
 
         // Artist Complete Button
         document.getElementById('artistCompleteBtn').addEventListener('click', async function() {
-            const isResumedForm = localStorage.getItem('isResumedForm') === 'true';
-            const resumedFilename = localStorage.getItem('resumedFormFilename');
+            const date = document.getElementById('date').value;
+            const lastName = document.getElementById('lastName').value;
+            const firstName = document.getElementById('firstName').value;
+            const artist = document.getElementById('artist').value;
+            const uniqueID = localStorage.getItem('currentFormID') || generateUniqueID();
+            const filename = `${date}_${lastName}_${firstName}_${artist}_PiercingMinor_${uniqueID}.pdf`;
             
-            let filename;
-            if (isResumedForm && resumedFilename) {
-                filename = resumedFilename.replace('.json', '.pdf');
-            } else {
-                const date = document.getElementById('date').value;
-                const lastName = document.getElementById('lastName').value;
-                const firstName = document.getElementById('firstName').value;
-                const artist = document.getElementById('artist').value;
-                const uniqueID = localStorage.getItem('currentFormID') || generateUniqueID();
-                filename = `${date}_${lastName}_${firstName}_${artist}_PiercingMinor_${uniqueID}.pdf`;
-            }
-            
-            const formHtml = document.documentElement.outerHTML;
-            
+            // Show loading state
             const statusMsg = document.getElementById('statusMessage');
-            statusMsg.textContent = '⏳ Completing and uploading...';
+            statusMsg.textContent = '⏳ Generating final PDF...';
             statusMsg.className = 'status-message';
             statusMsg.style.display = 'block';
             statusMsg.style.background = '#fff3cd';
             statusMsg.style.color = '#856404';
             
             try {
-                const response = await fetch(`${BACKEND_URL}/api/forms/artist-complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ formHtml, filename })
-                });
+                // Hide buttons before PDF generation
+                document.querySelector('.button-row').style.display = 'none';
                 
-                const result = await response.json();
+                // Generate PDF from form
+                const element = document.querySelector('.form-container');
+                const opt = {
+                    margin: 10,
+                    filename: filename,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
                 
-                if (result.success) {
-                    statusMsg.textContent = '✅ Complete! Form saved to Dropbox. Ready for next client.';
-                    statusMsg.className = 'status-message success';
-                    localStorage.removeItem('currentFormID');
-                    localStorage.removeItem('currentFilename');
-                    localStorage.removeItem('isResumedForm');
-                    localStorage.removeItem('resumedFormFilename');
-                    
-                    if (isResumedForm) {
-                        setTimeout(() => {
-                            window.location.href = '/artist-dashboard';
-                        }, 2000);
-                    } else {
-                        setTimeout(() => {
-                            if (confirm('Form complete! Reset for next client?')) {
-                                location.reload();
-                            }
-                        }, 2000);
-                    }
-                } else {
-                    throw new Error(result.error || 'Upload failed');
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                statusMsg.textContent = '❌ Upload failed. Please try again or save manually.';
-                statusMsg.style.background = '#f8d7da';
-                statusMsg.style.color = '#721c24';
+                await html2pdf().set(opt).from(element).save();
+                
+                // Show buttons again
+                document.querySelector('.button-row').style.display = 'grid';
+                
+                statusMsg.textContent = '✅ Complete! PDF downloaded. Ready for next client.';
+                statusMsg.className = 'status-message success';
+                
+                // Clean up localStorage
+                localStorage.removeItem('currentFormID');
+                localStorage.removeItem('currentFilename');
+                
+                // Reset form after delay
                 setTimeout(() => {
-                    if (confirm('Upload failed. Open print dialog to save manually?')) {
-                        window.print();
+                    if (confirm('Form complete! Reset for next client?')) {
+                        location.reload();
                     }
                 }, 2000);
+                
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                document.querySelector('.button-row').style.display = 'grid';
+                statusMsg.textContent = '❌ PDF generation failed. Please try again.';
+                statusMsg.style.background = '#f8d7da';
+                statusMsg.style.color = '#721c24';
             }
         });
     </script>
